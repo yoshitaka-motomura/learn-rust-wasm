@@ -1,76 +1,22 @@
 //! # Calendar
-//! This module is for calendar.
-//! ## Example
-//! ```
-//! use datebook::calendar::{holiday, OutputFormat};
-//! let year = 2024;
-//! let format = OutputFormat::YAML;
-//! let result = holiday(format, year).unwrap();
-//! println!("{}", result);
-//! ```
-//!
-//! ## Output Format
-//! | Format | Description |
-//! | --- | --- |
-//! | JSON | JSON format |
-//! | YAML | YAML format |
-//! | CSV | CSV format |
-//!
-//! ## Output Example
-//! ### JSON
-//! ```json
-//! [
-//!  {
-//!     "name": "元旦",
-//!    "date": "2024-01-01",
-//!   "substitute": false
-//! },
-//! ]
-//! ```
-//! ### YAML
-//! ```yaml
-//! - name: 元旦
-//! date: 2024-01-01
-//! substitute: false
-//! ```
-//! ### CSV
-//! ```csv
-//! name,date,substitute
-//! 元旦,2024-01-01,false
-//! ```
-//! ## Note
-//! This module outputs a list of Japanese holidays based on the National Holidays Law.
-//! Variations due to special events cannot be handled.
-//!
-//! Note: The exact dates of future vernal equinoxes and autumnal equinoxes cannot be calculated.
-//! This is due to the need for astronomical data. However,
-//! we use the predictions of Japanese observatories up to the year 2050.
-//! https://www8.cao.go.jp/chosei/shukujitsu/gaiyou.html
-//!
-#[allow(unused_imports)]
-use std::fs;
+//! This module provides a function to get a list of japanese holidays in a year.
+//! 
 use chrono::{Datelike, Duration, Weekday, NaiveDate, Local, DateTime};
 use chrono::TimeZone;
-use anyhow::{Result, Error};
+use anyhow::{Result, Error, Ok};
 use serde::Serialize;
-use serde_json::to_string_pretty;
 use super::timebase::{get_schedule, get_equinox_dates, Condition};
 
-#[derive(Debug)]
-#[allow(dead_code)]
-pub enum OutputFormat {
-    JSON,
-    CSV,
-    YAML,
-}
+/// Holiday
 #[derive(Serialize)]
 pub struct Holiday {
-    pub name: String,
-    pub date: NaiveDate,
-    pub substitute: bool,
+    pub name: String, // name of holiday
+    pub date: NaiveDate, // date of holiday
+    pub substitute: bool, // if it is a substitute holiday
 }
 
-pub fn holiday(format:OutputFormat, year: u32)-> Result<String, Error> {
+/// Get a list of japanese holidays in a year.
+pub fn holiday(year: u32)-> Result<Vec<Holiday>, Error> {
     //List of holidays stipulated in the Holidays Act
     let mut m = prepara(year);
     let e= pick_exuinox_from_year(year);
@@ -80,25 +26,7 @@ pub fn holiday(format:OutputFormat, year: u32)-> Result<String, Error> {
     //sort
     m.sort_by(|a, b| a.date.cmp(&b.date));
 
-    match format {
-        OutputFormat::CSV => {
-            let mut csv = String::new();
-            csv.push_str("name,date,substitute\n");
-            for d in m {
-                csv.push_str(&format!("{},{},{}\n", d.name, d.date, d.substitute));
-            }
-            Ok(csv)
-        },
-        OutputFormat::JSON => {
-            let json = to_string_pretty(&m).unwrap();
-            Ok(json)
-        },
-        OutputFormat::YAML => {
-            let yaml = serde_yaml::to_string(&m).unwrap();
-            Ok(yaml)
-        }
-    }
-
+    Ok(m)
 }
 
 // private functions
@@ -230,33 +158,3 @@ fn get_month_num_from_string(char: &str) -> Option<u32> {
     }
 }
 
-#[cfg(test)]
-pub mod test {
-    use pretty_assertions::assert_eq;
-    #[test]
-    pub fn test_holiday_output_yml() {
-        let year = 2024;
-        let expected = "- name: 元旦\n  date: 2024-01-01\n  substitute: false\n- name: 成人の日\n  date: 2024-01-08\n  substitute: false\n- name: 建国記念の日\n  date: 2024-02-11\n  substitute: false\n- name: 振替休日(建国記念の日)\n  date: 2024-02-12\n  substitute: true\n- name: 天皇誕生日\n  date: 2024-02-23\n  substitute: false\n- name: 春分の日\n  date: 2024-03-20\n  substitute: false\n- name: 昭和の日\n  date: 2024-04-29\n  substitute: false\n- name: 憲法記念日\n  date: 2024-05-03\n  substitute: false\n- name: みどりの日\n  date: 2024-05-04\n  substitute: false\n- name: こどもの日\n  date: 2024-05-05\n  substitute: false\n- name: 振替休日(こどもの日)\n  date: 2024-05-06\n  substitute: true\n- name: 海の日\n  date: 2024-07-15\n  substitute: false\n- name: 山の日\n  date: 2024-08-11\n  substitute: false\n- name: 振替休日(山の日)\n  date: 2024-08-12\n  substitute: true\n- name: 敬老の日\n  date: 2024-09-16\n  substitute: false\n- name: 秋分の日\n  date: 2024-09-22\n  substitute: false\n- name: 振替休日(秋分の日)\n  date: 2024-09-23\n  substitute: true\n- name: スポーツの日\n  date: 2024-10-14\n  substitute: false\n- name: 文化の日\n  date: 2024-11-03\n  substitute: false\n- name: 振替休日(文化の日)\n  date: 2024-11-04\n  substitute: true\n- name: 勤労感謝の日\n  date: 2024-11-23\n  substitute: false\n";
-        let format = super::OutputFormat::YAML;
-        let result = super::holiday(format, year).unwrap();
-        assert_eq!(result, expected);
-    }
-    #[test]
-    pub fn test_holiday_output_json() {
-        let year = 2024;
-        let expected = "[\n  {\n    \"name\": \"元旦\",\n    \"date\": \"2024-01-01\",\n    \"substitute\": false\n  },\n  {\n    \"name\": \"成人の日\",\n    \"date\": \"2024-01-08\",\n    \"substitute\": false\n  },\n  {\n    \"name\": \"建国記念の日\",\n    \"date\": \"2024-02-11\",\n    \"substitute\": false\n  },\n  {\n    \"name\": \"振替休日(建国記念の日)\",\n    \"date\": \"2024-02-12\",\n    \"substitute\": true\n  },\n  {\n    \"name\": \"天皇誕生日\",\n    \"date\": \"2024-02-23\",\n    \"substitute\": false\n  },\n  {\n    \"name\": \"春分の日\",\n    \"date\": \"2024-03-20\",\n    \"substitute\": false\n  },\n  {\n    \"name\": \"昭和の日\",\n    \"date\": \"2024-04-29\",\n    \"substitute\": false\n  },\n  {\n    \"name\": \"憲法記念日\",\n    \"date\": \"2024-05-03\",\n    \"substitute\": false\n  },\n  {\n    \"name\": \"みどりの日\",\n    \"date\": \"2024-05-04\",\n    \"substitute\": false\n  },\n  {\n    \"name\": \"こどもの日\",\n    \"date\": \"2024-05-05\",\n    \"substitute\": false\n  },\n  {\n    \"name\": \"振替休日(こどもの日)\",\n    \"date\": \"2024-05-06\",\n    \"substitute\": true\n  },\n  {\n    \"name\": \"海の日\",\n    \"date\": \"2024-07-15\",\n    \"substitute\": false\n  },\n  {\n    \"name\": \"山の日\",\n    \"date\": \"2024-08-11\",\n    \"substitute\": false\n  },\n  {\n    \"name\": \"振替休日(山の日)\",\n    \"date\": \"2024-08-12\",\n    \"substitute\": true\n  },\n  {\n    \"name\": \"敬老の日\",\n    \"date\": \"2024-09-16\",\n    \"substitute\": false\n  },\n  {\n    \"name\": \"秋分の日\",\n    \"date\": \"2024-09-22\",\n    \"substitute\": false\n  },\n  {\n    \"name\": \"振替休日(秋分の日)\",\n    \"date\": \"2024-09-23\",\n    \"substitute\": true\n  },\n  {\n    \"name\": \"スポーツの日\",\n    \"date\": \"2024-10-14\",\n    \"substitute\": false\n  },\n  {\n    \"name\": \"文化の日\",\n    \"date\": \"2024-11-03\",\n    \"substitute\": false\n  },\n  {\n    \"name\": \"振替休日(文化の日)\",\n    \"date\": \"2024-11-04\",\n    \"substitute\": true\n  },\n  {\n    \"name\": \"勤労感謝の日\",\n    \"date\": \"2024-11-23\",\n    \"substitute\": false\n  }\n]";
-        let format = super::OutputFormat::JSON;
-        let result = super::holiday(format, year).unwrap();
-        assert_eq!(result, expected)
-    }
-
-    #[test]
-    pub fn test_holiday_output_csv() {
-        let year = 2024;
-        let expected = "name,date,substitute\n元旦,2024-01-01,false\n成人の日,2024-01-08,false\n建国記念の日,2024-02-11,false\n振替休日(建国記念の日),2024-02-12,true\n天皇誕生日,2024-02-23,false\n春分の日,2024-03-20,false\n昭和の日,2024-04-29,false\n憲法記念日,2024-05-03,false\nみどりの日,2024-05-04,false\nこどもの日,2024-05-05,false\n振替休日(こどもの日),2024-05-06,true\n海の日,2024-07-15,false\n山の日,2024-08-11,false\n振替休日(山の日),2024-08-12,true\n敬老の日,2024-09-16,false\n秋分の日,2024-09-22,false\n振替休日(秋分の日),2024-09-23,true\nスポーツの日,2024-10-14,false\n文化の日,2024-11-03,false\n振替休日(文化の日),2024-11-04,true\n勤労感謝の日,2024-11-23,false\n";
-        let format = super::OutputFormat::CSV;
-        let result = super::holiday(format, year).unwrap();
-        assert_eq!(result, expected)
-    }
-
-}

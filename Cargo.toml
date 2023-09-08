@@ -3,11 +3,9 @@ name = "jpn_holidays_wasm"
 version = "0.1.0"
 edition = "2021"
 description = "Japanese holidays library for WebAssembly"
-repository = ""
+repository = "https://github.com/yoshitaka-motomura/learn-rust-wasm"
 license = "MIT"
 readme = "README.md"
-homepage = ""
-documentation = ""
 keywords = ["japanese", "holidays", "wasm"]
 categories = ["date-and-time"]
 authors = ["Yoshitaka motomura <stay.daybreak@gmail.com>"]
@@ -24,5 +22,7 @@ csv = "1.2.2"
 anyhow = "1.0.75"
 serde_yaml = "0.9.25"
 pretty_assertions = "1.4.0"
+serde-wasm-bindgen = "0.5.0"
+
 [lib]
 crate-type=["cdylib"]
